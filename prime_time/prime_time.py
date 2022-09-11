@@ -37,7 +37,7 @@ def service_connection(key, mask):
             sock.close()
 
     if mask & selectors.EVENT_WRITE:
-        if data.outb:
+        if req_data:
             req = json.loads(req_data)
             valid_numbers = [int, float]
             print(req)
