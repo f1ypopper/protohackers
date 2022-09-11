@@ -26,34 +26,39 @@ def isprime(num):
 def service_connection(key, mask):
     sock = key.fileobj
     data = key.data
-    req_data = b''
     if mask & selectors.EVENT_READ:
         recv_data = sock.recv(1024)
         if recv_data:
-            req_data += recv_data
+            data.outb += recv_data
         else:
             print(f"closing connection to {data.addr}")
             sel.unregister(sock)
             sock.close()
 
     if mask & selectors.EVENT_WRITE:
-        if req_data:
-            req = json.loads(req_data)
-            valid_numbers = [int, float]
+        if data.outb:
+            req = json.loads(data.outb)
+            num_types = [int, float]
             print(req)
-            if (req["method"] != "isPrime") or (req["number"] not in valid_numbers) :
-                mal_res = {"method":"asfd", "prime":"asdf"}
-                sock.sendall(json.dumps(mal_res)+"\n")
-                return
-
-            if isprime(req["number"]):
-                res = {"method":"isPrime", "prime":True}
-                sent = sock.sendall(json.dumps(res)+"\n")
+            if req["method"] != "isPrime" or type(req["number"]) != num_types:
+                res = {"method":"malformed request"}
                 print(res)
+                res_str = json.dumps(res)+"\n"
+                sock.sendall(res_str.encode())
+
+            number = req["number"]
+            if isprime(number):
+                res = {"method":"isPrime", "prime":True}
+                res_str = json.dumps(res)+"\n"
+                print(res)
+                sock.sendall(res_str.encode())
             else:
                 res = {"method":"isPrime", "prime":False}
-                sent = sock.sendall(json.dumps(res)+"\n")
+                res_str = json.dumps(res)+"\n"
                 print(res)
+                sock.sendall(res_str.encode())
+
+            data.outb = data.outb[len(data.outb):]
 
 host = '0.0.0.0'
 port = 5000
