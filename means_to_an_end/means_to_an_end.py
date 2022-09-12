@@ -51,7 +51,7 @@ def handle_connection(conn: socket.socket, addr):
 
     while True:
         raw_msg = conn.recv(9)
-
+        print(raw_msg)
         if not raw_msg:
             conn.close()
             print(f'connection closed {addr}')
