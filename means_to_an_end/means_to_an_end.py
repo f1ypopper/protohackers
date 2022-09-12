@@ -62,25 +62,24 @@ def handle_connection(conn: socket.socket, addr):
             return
 
 #        msg_type, val1, val2 = struct.unpack('cii', raw_msg)
-        print((msg_type, val1, val2))
-        if msg_type != 'I' or msg_type != 'Q':
+        if msg_type != b'I' or msg_type != b'Q':
             conn.close()
             print(f'connection closed {addr}')
             return
 
-        if msg_type == 'I':
-            timestamp = val1
-            price = val2
+        if msg_type == b'I':
+            timestamp = int.from_bytes(val1, "big")
+            price = int.from_bytes(val2, "big")
             entry = {'timestamp':timestamp, 'price':price}
             db.insert(entry)
             print(f'inserted {entry}')
 
-        elif msg_type == 'Q':
-            mintime = val1
-            maxtime = val2
+        elif msg_type == b'Q':
+            mintime = int.from_bytes(val1, "big")
+            maxtime = int.from_bytes(val2, "big")
             aggregate = db.query(mintime, maxtime)
             conn.send(aggregate)
-            print(f'aggregate {aggregate}')
+            print(f'query result {aggregate}')
 
 def main():
     server = BaseServer(host, port, num_threads)
