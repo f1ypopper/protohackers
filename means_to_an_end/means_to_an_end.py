@@ -62,7 +62,7 @@ def handle_connection(conn: socket.socket, addr):
             return
 
 #        msg_type, val1, val2 = struct.unpack('cii', raw_msg)
-        if msg_type != b'I' or msg_type != b'Q':
+        if msg_type != b'I' and  msg_type != b'Q':
             conn.close()
             print(f'connection closed {addr}')
             return
