@@ -1,9 +1,15 @@
 import socket
 import json
-import threading
 from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
 from itertools import count
+
+import sys, os, inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0, parentdir)
+
+from base_server.base_server import BaseServer
 
 host = '0.0.0.0'
 port = 5000
@@ -116,15 +122,18 @@ def handle_connection(conn:socket.socket, addr):
 
 def main():
     num_threads = 5
-    with ThreadPoolExecutor(max_workers=num_threads) as executor:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
-            server.bind((host, port))
-            server.listen()
-            print(f"server listening on {(host,port)}")
-            while True:
-                conn, addr = server.accept()
-                executor.submit(handle_connection, conn, addr)
-    print("server shutting down")
+    server = BaseServer(host, port, num_threads)
+    server.start(handle_connection)
+
+#    with ThreadPoolExecutor(max_workers=num_threads) as executor:
+        #with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+            #server.bind((host, port))
+            #server.listen()
+            #print(f"server listening on {(host,port)}")
+            #while True:
+                #conn, addr = server.accept()
+                #executor.submit(handle_connection, conn, addr)
+    #print("server shutting down")
 
 if __name__ == '__main__':
     main()
