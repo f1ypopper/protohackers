@@ -50,15 +50,19 @@ def handle_connection(conn: socket.socket, addr):
     db = TimeSeriesDB()
 
     while True:
-        raw_msg = conn.recv(9)
-        print(raw_msg)
-        if not raw_msg:
+#        raw_msg = conn.recv(9)
+#        print(raw_msg)
+
+        msg_type = conn.recv(1)
+        val1 = conn.recv(4)
+        val2 = conn.recv(4)
+        if not msg_type:
             conn.close()
             print(f'connection closed {addr}')
             return
 
-        msg_type, val1, val2 = struct.unpack('cii', raw_msg)
-        print(msg_type, val1, val2)
+#        msg_type, val1, val2 = struct.unpack('cii', raw_msg)
+        print((msg_type, val1, val2))
         if msg_type != 'I' or msg_type != 'Q':
             conn.close()
             print(f'connection closed {addr}')
