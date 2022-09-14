@@ -1,6 +1,5 @@
 import socket
 import json
-from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
 from itertools import count
 
