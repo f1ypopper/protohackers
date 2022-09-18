@@ -8,12 +8,13 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#include "thpool.h"
+#include "../threadpool/thpool.h"
 
 const char* host = "0.0.0.0";
 const char* port = "5000";
 
-void handle_connection(int conn){
+void handle_connection(void* c){
+    int conn = *(int*)c;
     char* buffer = malloc(1024);
     int recv_bytes = 0;
     while(1){
@@ -67,15 +68,14 @@ int main(){
     }
     printf("server listening on %s:%s\n", host, port);
     char conn_ipstr[INET_ADDRSTRLEN];
-    threadpool* pool = thpool_init(5);
+    threadpool pool = thpool_init(5);
     while(1){
         struct sockaddr conn_addr;
         int conn_addrlen = sizeof(conn_addr);
         int conn = accept(server, (struct sockaddr* )&conn_addr, &conn_addrlen);
         inet_ntop(conn_addr.sa_family, conn_addr.sa_data, conn_ipstr, sizeof conn_ipstr);
         printf("accepted connection from %s\n", conn_ipstr);
-        handle_connection(conn);
-        thpool_add_work(pool, &handle_connection, conn);
+        thpool_add_work(pool, handle_connection, &conn);
     }
     thpool_destroy(pool);
     close(server);
