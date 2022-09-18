@@ -124,15 +124,5 @@ def main():
     server = BaseServer(host, port, num_threads)
     server.start(handle_connection)
 
-#    with ThreadPoolExecutor(max_workers=num_threads) as executor:
-        #with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
-            #server.bind((host, port))
-            #server.listen()
-            #print(f"server listening on {(host,port)}")
-            #while True:
-                #conn, addr = server.accept()
-                #executor.submit(handle_connection, conn, addr)
-    #print("server shutting down")
-
 if __name__ == '__main__':
     main()
