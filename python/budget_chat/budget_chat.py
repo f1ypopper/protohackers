@@ -1,3 +1,4 @@
+from select import select
 import types
 import selectors
 import socket
@@ -15,14 +16,17 @@ def check_username(username:str):
     if not username.isalnum():
         return False
     return True
-
+import time
 def readline(conn: socket.socket):
     line = bytes()
-    while True:
-        c = conn.recv(1)
-        if c == b'\n' or c == b'\r':
-            return line
-        line+=c
+    events = sel.select()
+    for key, mask in events:
+        if key.fileobj == conn and mask & selectors.EVENT_READ:
+            while True:
+                c = conn.recv(1)
+                if c == b'\n' or c == b'\r':
+                    return line
+                line+=c
     return line.decode()
 
 def accept_new_connection(sock: socket.socket):
