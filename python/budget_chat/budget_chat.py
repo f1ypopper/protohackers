@@ -17,18 +17,19 @@ def check_username(username:str):
     return True
 
 def readline(conn: socket.socket):
-    line = str()
+    line = bytes()
     while True:
         c = conn.recv(1)
-        if c == '\n' or c == '\r':
+        if c == b'\n' or c == b'\r':
             return line
         line+=c
+    return line.decode()
 
 def accept_new_connection(sock: socket.socket):
     conn, addr = sock.accept()
     conn.setblocking(False)
     #send the welcome message and get the username
-    conn.sendall(WELCOME_MESSAGE)
+    conn.sendall(WELCOME_MESSAGE.encode())
     username = readline(conn)
     print(username)
     if not check_username(username):
@@ -36,7 +37,7 @@ def accept_new_connection(sock: socket.socket):
         conn.close()
         return
     room_users_msg = f"* this room contains: {', '.join(users)}"
-    conn.sendall(room_users_msg)
+    conn.sendall(room_users_msg.encode())
     data = types.SimpleNamespace(addr=addr, inb=b"", outb=b"", username=username)
     sel.register(conn,selectors.EVENT_READ | selectors.EVENT_WRITE, data=data)
     users.append(username)
@@ -48,7 +49,7 @@ def accept_new_connection(sock: socket.socket):
         if mask & selectors.EVENT_READ:
             if key.fileobj != sock and key.fileobj != server_fileno:
                 u = key.fileobj
-                u.sendall(inform_new_user_msg)
+                u.sendall(inform_new_user_msg.encode())
 
 
 def service_connection(key: selectors.SelectorKey, mask):
@@ -68,7 +69,7 @@ def service_connection(key: selectors.SelectorKey, mask):
         if mask & selectors.EVENT_READ:
             if key.fileobj != sock and key.fileobj != server_fileno:
                 conn = key.fileobj
-                conn.sendall(formatted_msg)
+                conn.sendall(formatted_msg.encode())
 
 
 def main():
