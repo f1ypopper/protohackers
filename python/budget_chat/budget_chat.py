@@ -16,19 +16,27 @@ def check_username(username:str):
         return False
     return True
 
+def readline(conn: socket.socket):
+    line = str()
+    while True:
+        c = conn.recv(1)
+        if c == '\n' or c == '\r':
+            return line
+        line+=c
+
 def accept_new_connection(sock: socket.socket):
     conn, addr = sock.accept()
     conn.setblocking(False)
-    conn.makefile('rwb')
     #send the welcome message and get the username
-    conn.write(WELCOME_MESSAGE.encode())
-    username = conn.readline().decode()
+    conn.sendall(WELCOME_MESSAGE)
+    username = readline(conn)
+    print(username)
     if not check_username(username):
         print("invalid username closing connection ...")
         conn.close()
         return
     room_users_msg = f"* this room contains: {', '.join(users)}"
-    conn.write(room_users_msg.encode())
+    conn.sendall(room_users_msg)
     data = types.SimpleNamespace(addr=addr, inb=b"", outb=b"", username=username)
     sel.register(conn,selectors.EVENT_READ | selectors.EVENT_WRITE, data=data)
     users.append(username)
@@ -39,16 +47,16 @@ def accept_new_connection(sock: socket.socket):
     for key, mask in events:
         if mask & selectors.EVENT_READ:
             if key.fileobj != sock and key.fileobj != server_fileno:
-                conn = key.fileobj
-                conn.write(inform_new_user_msg.encode())
+                u = key.fileobj
+                u.sendall(inform_new_user_msg)
 
 
 def service_connection(key: selectors.SelectorKey, mask):
     sock = key.fileobj
     data = key.data
-    msg = bytes()
+    msg = str()
     if mask & selectors.EVENT_READ:
-        msg = sock.readline()
+        msg = readline(sock)
     formatted_msg = str()
     if not msg:
         sock.close()
@@ -60,7 +68,7 @@ def service_connection(key: selectors.SelectorKey, mask):
         if mask & selectors.EVENT_READ:
             if key.fileobj != sock and key.fileobj != server_fileno:
                 conn = key.fileobj
-                conn.write(formatted_msg)
+                conn.sendall(formatted_msg)
 
 
 def main():
