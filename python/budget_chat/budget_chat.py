@@ -1,106 +1,80 @@
-from select import select
-import types
-import selectors
 import socket
+import selectors
+from stream import StreamReader
 
 HOST = '0.0.0.0'
 PORT = 5000
-WELCOME_MESSAGE = "Welcome to the server! Enter your username"
-server_fileno = int()
 sel = selectors.DefaultSelector()
-users = []
+clients = {}
 
-def check_username(username:str):
-    if len(username) < 1:
-        return False
-    if not username.isalnum():
-        return False
-    return True
-import time
-def readline(conn: socket.socket):
-    line = bytes()
-    events = sel.select()
-    for key, mask in events:
-        if key.fileobj == conn and mask & selectors.EVENT_READ:
-            while True:
-                c = conn.recv(1)
-                if c == b'\n' or c == b'\r':
-                    return line
-                line+=c
-    return line.decode()
-
-def accept_new_connection(sock: socket.socket):
-    conn, addr = sock.accept()
-    conn.setblocking(False)
-    #send the welcome message and get the username
-    conn.sendall(WELCOME_MESSAGE.encode())
-    username = readline(conn)
-    print(username)
-    if not check_username(username):
-        print("invalid username closing connection ...")
-        conn.close()
-        return
-    room_users_msg = f"* this room contains: {', '.join(users)}"
-    conn.sendall(room_users_msg.encode())
-    data = types.SimpleNamespace(addr=addr, inb=b"", outb=b"", username=username)
-    sel.register(conn,selectors.EVENT_READ | selectors.EVENT_WRITE, data=data)
-    users.append(username)
-    print(f"new user added to {', '.join(users)}")
-
-    events = sel.select()
-    inform_new_user_msg = f"* {username} has joined the room"
-    for key, mask in events:
-        if mask & selectors.EVENT_READ:
-            if key.fileobj != sock and key.fileobj != server_fileno:
-                u = key.fileobj
-                u.sendall(inform_new_user_msg.encode())
-
-
-def service_connection(key: selectors.SelectorKey, mask):
-    sock = key.fileobj
-    data = key.data
-    msg = str()
-    if mask & selectors.EVENT_READ:
-        msg = readline(sock)
-    formatted_msg = str()
-    if not msg:
-        sock.close()
-        formatted_msg = f"* {data.username} has left the room"
-    else:
-        formatted_msg = f"[{data.username}] {msg}"
-    events = sel.select()
-    for key, mask in events:
-        if mask & selectors.EVENT_READ:
-            if key.fileobj != sock and key.fileobj != server_fileno:
-                conn = key.fileobj
-                conn.sendall(formatted_msg.encode())
-
-
-def main():
+def create_server():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.fileno
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((HOST, PORT))
-    server.makefile('rwb')
     server.setblocking(False)
     server.listen(10)
-    global server_fileno
-    server_fileno = server.fileno
-    print(f'server listening on {(HOST, PORT)}...')
+    sel.register(server, selectors.EVENT_READ)
+    return server
 
-    sel.register(server, selectors.EVENT_READ, None)
-    try:
-        while True:
-            events = sel.select()
-            for key, mask in events:
-                if key.data is None:
-                    accept_new_connection(key.fileobj)
+def room_users():
+    usernames = [reader.username for reader in clients.values() if reader.username]
+    return "* This room contains: "+", ".join(usernames)
+
+def usr_msg(username, msg):
+    return f"[{username}] {msg}"
+
+def close_conn(fileobj):
+    sel.unregister(fileobj)
+    del clients[fileobj]
+    fileobj.close()
+    print("connection closed")
+
+def check_username(username: str):
+    if not username.isalnum():
+        return False
+    if len(username) < 1:
+        return False
+    return True
+
+def main():
+    server = create_server()
+    print(f"server listening on {HOST}:{PORT}")
+
+    while True:
+        events = sel.select()
+        for key, mask in events:
+            if mask & selectors.EVENT_READ:
+                if key.fileobj == server:
+                    conn, addr = server.accept()
+                    conn.setblocking(False)
+                    sel.register(conn, selectors.EVENT_READ)
+                    print(f"accepted connection from {addr}")
+                    conn.send(b"Welcome to the server! Enter your username\n")
+                    clients[conn] = StreamReader(conn,'')
                 else:
-                    service_connection(key, mask)
+                    stream = clients[key.fileobj]
+                    data = stream.readline()
+                    msg = ""
+                    if not data:
+                        close_conn(key.fileobj)
+                        msg = f"* {stream.username} has left the room\n"
+                    else:
+                        if not stream.username:
+                            username = data.decode().rstrip()
+                            if not check_username(username):
+                                close_conn(key.fileobj)
+                            key.fileobj.send((room_users()+"\n").encode())
+                            stream.username = username
+                            msg = f"* {username} has joined the room\n"
+                        else:
+                            msg = usr_msg(stream.username, data.decode().rstrip())+"\n"
 
-    except KeyboardInterrupt:
-        print("server closed")
-    finally:
-        server.close()
+                    for client in clients.keys():
+                        if client != key.fileobj:
+                            client.send(msg.encode())
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("server closing...")
