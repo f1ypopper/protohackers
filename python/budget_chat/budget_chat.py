@@ -69,8 +69,8 @@ def main():
                         else:
                             msg = usr_msg(stream.username, data.decode().rstrip())+"\n"
 
-                    for client in clients.keys():
-                        if client != key.fileobj:
+                    for client, data in clients.items():
+                        if client != key.fileobj and data.username:
                             client.send(msg.encode())
 
 if __name__ == '__main__':
