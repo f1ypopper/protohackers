@@ -11,7 +11,7 @@ db = {}
 db['version'] = 'Key-DB 1.0'
 
 def parse_insert(data: str):
-    return data.split('=')
+    return data.split('=',1)
 
 def format_key_value(key:str, value:str):
     return key+"="+value
