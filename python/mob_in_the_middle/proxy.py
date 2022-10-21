@@ -1,6 +1,4 @@
 import asyncio
-from asyncore import write
-from dis import disco
 import logging
 import re
 
