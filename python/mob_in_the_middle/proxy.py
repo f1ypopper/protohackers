@@ -25,13 +25,10 @@ async def handle(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
 
 async def main():
     logging.basicConfig(level=logging.DEBUG)
-    try:
-        server = await asyncio.start_server(handle, PROXY, PROXY_PORT)
-        logging.info("proxy server ready")
-    except KeyboardInterrupt:
-        logging.info("proxy server closed")
-    finally:
-        server.close()
+    server = await asyncio.start_server(handle, PROXY, PROXY_PORT)
+    logging.info("proxy server ready")
+    async with server:
+        await server.serve_forever()
 
 if __name__ == '__main__':
     asyncio.run(main())
