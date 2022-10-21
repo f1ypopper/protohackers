@@ -25,13 +25,11 @@ async def handle(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
                 replaced_server_msg = re.sub(BOGUS_RE, TONY_BOGUS, server_msg.decode())
                 logging.info(f"[SERVER]{replaced_server_msg.strip()}")
                 writer.write(replaced_server_msg.encode())
-                await writer.drain()
             client_msg = await reader.readline()
             if client_msg:
                 replaced_client_msg = re.sub(BOGUS_RE, TONY_BOGUS, client_msg.decode())
                 logging.info(f"[CLIENT]{replaced_client_msg.strip()}")
                 uwriter.write(replaced_client_msg.encode())
-                await uwriter.drain()
     except ValueError:
         pass
     finally:
