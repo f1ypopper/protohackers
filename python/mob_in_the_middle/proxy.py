@@ -39,11 +39,7 @@ async def handle(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     except ValueError:
         pass
     finally:
-        await uwriter.drain()
-        await writer.drain()
-        writer.close()
-        uwriter.close()
-        logging.info("connection closed") 
+        await disconnect()
 
 async def main():
     logging.basicConfig(level=logging.DEBUG)
