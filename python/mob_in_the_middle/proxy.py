@@ -1,5 +1,6 @@
 import asyncio
 from asyncore import write
+from dis import disco
 import logging
 import re
 
@@ -12,16 +13,27 @@ TONY_BOGUS = "7YWHMfk9JZe0LM0g1ZauHuiSxhI"
 
 async def handle(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     ureader, uwriter = await asyncio.open_connection(UPSTREAM_SERVER, UPSTREAM_PORT)
+    async def disconnect():
+        await uwriter.drain()
+        await writer.drain()
+        writer.close()
+        uwriter.close()
+        logging.info("connection closed")
+        return 
     try:
         while not reader.at_eof() or not ureader.at_eof():
             server_msg = await ureader.readline()
+            if not server_msg:
+                await disconnect()
             replaced_server_msg = re.sub(BOGUS_RE, TONY_BOGUS, server_msg.decode())
-            logging.info(f"[SERVER]{replaced_server_msg}")
+            logging.info(f"[SERVER]{replaced_server_msg.strip()}")
             writer.write(replaced_server_msg.encode())
             await writer.drain()
             client_msg = await reader.readline()
+            if not client_msg:
+                await disconnect()
             replaced_client_msg = re.sub(BOGUS_RE, TONY_BOGUS, client_msg.decode())
-            logging.info(f"[CLIENT]{replaced_client_msg}")
+            logging.info(f"[CLIENT]{replaced_client_msg.strip()}")
             uwriter.write(replaced_client_msg.encode())
             await uwriter.drain()
     except ValueError:
