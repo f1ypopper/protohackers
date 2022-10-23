@@ -1,11 +1,10 @@
 import asyncio
 import logging
 import re
-from weakref import proxy
 
 PROXY = "0.0.0.0"
 PROXY_PORT = 5000
-UPSTREAM_SERVER = "localhost"
+UPSTREAM_SERVER = "chat.protohackers.com"
 UPSTREAM_PORT = 16963
 BOGUS_RE = r"7\w{25,35}"
 TONY_BOGUS = "7YWHMfk9JZe0LM0g1ZauHuiSxhI"
