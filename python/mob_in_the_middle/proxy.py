@@ -16,27 +16,28 @@ async def handle_client(client_reader: asyncio.StreamReader, client_writer: asyn
     proxy_reader, proxy_writer = await asyncio.open_connection(UPSTREAM_SERVER, UPSTREAM_PORT)
 
     async def handle_proxy_msg():
-        proxy_msg = (await proxy_reader.readline()).decode()
-        logging.info(f"{UPSTREAM_SERVER} received msg: {proxy_msg.strip()}")
-        #malicious_msg = re.sub(BOGUS_RE, TONY_BOGUS, proxy_msg)
-        malicious_msg = proxy_msg
-        client_writer.write(malicious_msg.encode())
-        await client_writer.drain()
-        logging.info(f"{addr} sent msg: {malicious_msg.strip()}")
+        while True:
+            proxy_msg = (await proxy_reader.readline()).decode()
+            logging.info(f"{UPSTREAM_SERVER} received msg: {proxy_msg.strip()}")
+            #malicious_msg = re.sub(BOGUS_RE, TONY_BOGUS, proxy_msg)
+            malicious_msg = proxy_msg
+            client_writer.write(malicious_msg.encode())
+            await client_writer.drain()
+            logging.info(f"{addr} sent msg: {malicious_msg.strip()}")
 
     async def handle_client_msg():
-        client_msg = (await client_reader.readline()).decode()
-        logging.info(f"{addr} received msg: {client_msg.strip()}")
-        #malicious_msg = re.sub(BOGUS_RE, TONY_BOGUS, client_msg)
-        malicious_msg = client_msg
-        proxy_writer.write(malicious_msg.encode())
-        await proxy_writer.drain()
-        logging.info(f"{UPSTREAM_SERVER} sent msg: {malicious_msg.strip()}")
+        while True:
+            client_msg = (await client_reader.readline()).decode()
+            logging.info(f"{addr} received msg: {client_msg.strip()}")
+            #malicious_msg = re.sub(BOGUS_RE, TONY_BOGUS, client_msg)
+            malicious_msg = client_msg
+            proxy_writer.write(malicious_msg.encode())
+            await proxy_writer.drain()
+            logging.info(f"{UPSTREAM_SERVER} sent msg: {malicious_msg.strip()}")
 
     while not proxy_reader.at_eof() or not  client_reader.at_eof():
-        await handle_proxy_msg()
-        await handle_client_msg()
-
+        client_task = asyncio.create_task(handle_client_msg())
+        proxy_task = asyncio.create_task(handle_proxy_msg())
 async def main():
     logging.basicConfig(level=logging.DEBUG)
     server = await asyncio.start_server(handle_client, PROXY, PROXY_PORT)
