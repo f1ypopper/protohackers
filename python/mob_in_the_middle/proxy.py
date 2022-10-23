@@ -16,29 +16,20 @@ async def handle_client(client_reader: asyncio.StreamReader, client_writer: asyn
     logging.info(f"{addr} connected to the proxy server")
     proxy_reader, proxy_writer = await asyncio.open_connection(UPSTREAM_SERVER, UPSTREAM_PORT)
 
-    async def disconnect():
-        await proxy_writer.drain()
-        await client_writer.drain()
-        proxy_writer.close()
-        client_writer.close()
-        return 
-
     async def handle_proxy_msg():
         proxy_msg = (await proxy_reader.readline()).decode()
-        if not proxy_msg:
-            await disconnect()
         logging.info(f"{UPSTREAM_SERVER} received msg: {proxy_msg.strip()}")
-        malicious_msg = re.sub(BOGUS_RE, TONY_BOGUS, proxy_msg)
+        #malicious_msg = re.sub(BOGUS_RE, TONY_BOGUS, proxy_msg)
+        malicious_msg = proxy_msg
         client_writer.write(malicious_msg.encode())
         logging.info(f"{addr} sent msg: {malicious_msg.strip()}")
         await client_writer.drain()
 
     async def handle_client_msg():
         client_msg = (await client_reader.readline()).decode()
-        if not client_msg:
-            await disconnect()
         logging.info(f"{addr} received msg: {client_msg.strip()}")
-        malicious_msg = re.sub(BOGUS_RE, TONY_BOGUS, client_msg)
+        #malicious_msg = re.sub(BOGUS_RE, TONY_BOGUS, client_msg)
+        malicious_msg = client_msg
         proxy_writer.write(malicious_msg.encode())
         logging.info(f"{UPSTREAM_SERVER} sent msg: {malicious_msg.strip()}")
         await proxy_writer.drain()
