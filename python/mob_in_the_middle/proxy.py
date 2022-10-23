@@ -35,9 +35,9 @@ async def handle_client(client_reader: asyncio.StreamReader, client_writer: asyn
             await proxy_writer.drain()
             logging.info(f"{UPSTREAM_SERVER} sent msg: {malicious_msg.strip()}")
 
-    while not proxy_reader.at_eof() or not  client_reader.at_eof():
-        client_task = asyncio.create_task(handle_client_msg())
-        proxy_task = asyncio.create_task(handle_proxy_msg())
+    client_task = asyncio.create_task(handle_client_msg())
+    proxy_task = asyncio.create_task(handle_proxy_msg())
+
 async def main():
     logging.basicConfig(level=logging.DEBUG)
     server = await asyncio.start_server(handle_client, PROXY, PROXY_PORT)
