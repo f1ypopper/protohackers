@@ -5,7 +5,7 @@ from weakref import proxy
 
 PROXY = "0.0.0.0"
 PROXY_PORT = 5000
-UPSTREAM_SERVER = "chat.protohackers.com"
+UPSTREAM_SERVER = "localhost"
 UPSTREAM_PORT = 16963
 BOGUS_RE = r"7\w{25,35}"
 TONY_BOGUS = "7YWHMfk9JZe0LM0g1ZauHuiSxhI"
@@ -22,8 +22,8 @@ async def handle_client(client_reader: asyncio.StreamReader, client_writer: asyn
         #malicious_msg = re.sub(BOGUS_RE, TONY_BOGUS, proxy_msg)
         malicious_msg = proxy_msg
         client_writer.write(malicious_msg.encode())
-        logging.info(f"{addr} sent msg: {malicious_msg.strip()}")
         await client_writer.drain()
+        logging.info(f"{addr} sent msg: {malicious_msg.strip()}")
 
     async def handle_client_msg():
         client_msg = (await client_reader.readline()).decode()
@@ -31,8 +31,8 @@ async def handle_client(client_reader: asyncio.StreamReader, client_writer: asyn
         #malicious_msg = re.sub(BOGUS_RE, TONY_BOGUS, client_msg)
         malicious_msg = client_msg
         proxy_writer.write(malicious_msg.encode())
-        logging.info(f"{UPSTREAM_SERVER} sent msg: {malicious_msg.strip()}")
         await proxy_writer.drain()
+        logging.info(f"{UPSTREAM_SERVER} sent msg: {malicious_msg.strip()}")
 
     while not proxy_reader.at_eof() or not  client_reader.at_eof():
         await handle_proxy_msg()
