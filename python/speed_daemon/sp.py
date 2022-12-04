@@ -12,6 +12,7 @@ async def read_int(reader: asyncio.StreamReader, num_bytes: int) -> int:
     return int.from_bytes(await reader.readexactly(num_bytes), 'big')
 
 async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+    logging.info("new client connected")
     interval = 0
     heart_task = None
     async def heart_beat():
@@ -23,12 +24,12 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 await writer.drain()
                 start = time.time()
                 logging.info(f"sent heart beat at interval {interval}")
-
-    msg_type = await read_int(reader, u8)
-    logging.info(f"recieved msg {msg_type}")
-    if msg_type == 0x40:
-        interval = (await read_int(reader, u32))/10
-        heart_task = asyncio.create_task(heart_beat())
+    while True:
+        msg_type = await read_int(reader, u8)
+        logging.info(f"recieved msg {msg_type}")
+        if msg_type == 0x40:
+            interval = (await read_int(reader, u32))/10
+            heart_task = asyncio.create_task(heart_beat())
 
 async def main():
     logging.basicConfig(level=logging.DEBUG)
