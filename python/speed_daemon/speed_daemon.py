@@ -31,10 +31,13 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
 
     async def heart_beat(interval):
         start = time.time()
-        while True:
-            if time.time() - start >= interval:
-                writer.write((65).to_bytes(1, 'big'))
-                await writer.drain()
+        try:
+            while True:
+                if time.time() - start >= interval:
+                    writer.write((65).to_bytes(1, 'big'))
+                    await writer.drain()
+        except:
+            await disconnect()
 
     async def handle_camera_client(road, mile, limit):
         while not reader.at_eof():
