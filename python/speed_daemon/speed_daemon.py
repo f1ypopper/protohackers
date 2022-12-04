@@ -122,6 +122,9 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 roads.append(int.from_bytes(await reader.readexactly(u16), 'big'))
             await handle_dispatcher_client(roads)
         elif msg_type == 0x40:
+            if heart_beat_task:
+                logging.error("heart beat interval already set!")
+                await disconnect()
             interval = int.from_bytes(await reader.readexactly(u8), 'big')/10
             heart_beat_task = asyncio.create_task(heart_beat(interval))
             logging.info(f"heart beat interval set to {interval}")
