@@ -15,6 +15,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
     interval = 0
     heart_task = None
     async def heart_beat():
+        logging.info(f"inside a heart_beat task with interval {interval}")
         start = time.time()
         while True:
             if interval != 0 and time.time() - start >= interval:
