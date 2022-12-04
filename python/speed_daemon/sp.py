@@ -25,7 +25,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
 
     msg_type = await read_int(reader, u8)
     logging.info(f"recieved msg {msg_type}")
-    if msg_type == 0x41:
+    if msg_type == 0x40:
         interval = (await read_int(reader, u32))/10
         heart_task = asyncio.create_task(heart_beat())
 
