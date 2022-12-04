@@ -103,23 +103,27 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                         else:
                             cars[car.plate] = car
 
-    client_type = int(await reader.readexactly(8))
-
-    if client_type == 0x80:
-        logging.info("camera client connected!")
-        road = await reader.readexactly(16)
-        mile = await reader.readexactly(16)
-        limit = await reader.readexactly(16) #miles per hour
-        await handle_camera_client(road, mile, limit)
-    elif client_type == 0x81:
-        logging.info("ticket dispatcher client connected!")
-        numroads = int(await reader.readexactly(8))
-        roads = []
-        for _ in range(0, numroads):
-            roads.append(await reader.readexactly(16))
-        await handle_dispatcher_client(roads)
-    else:
-        logging.info(f"unknown client {client_type}?")
+    msg_type = int(await reader.readexactly(8))
+    while not reader.at_eof():
+        if msg_type == 0x80:
+            logging.info("camera client connected!")
+            road = await reader.readexactly(16)
+            mile = await reader.readexactly(16)
+            limit = await reader.readexactly(16) #miles per hour
+            await handle_camera_client(road, mile, limit)
+        elif msg_type == 0x81:
+            logging.info("ticket dispatcher client connected!")
+            numroads = int(await reader.readexactly(8))
+            roads = []
+            for _ in range(0, numroads):
+                roads.append(await reader.readexactly(16))
+            await handle_dispatcher_client(roads)
+        elif msg_type == 0x40:
+            interval = int(await reader.readexactly(8))/10
+            heart_beat_task = asyncio.create_task(heart_beat(interval))
+            logging.info("heart beat interval set")
+        else:
+            logging.info(f"unknown msg_type {msg_type}?")
 
 async def main():
     logging.basicConfig(level=logging.DEBUG)
