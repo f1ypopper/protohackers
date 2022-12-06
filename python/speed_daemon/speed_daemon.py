@@ -30,10 +30,10 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
         pass
 
     async def heart_beat(interval):
-        start = time.time()
         try:
-            while True:
-                if time.time() - start >= interval:
+            if interval != 0:
+                while True:
+                    await asyncio.sleep(interval)
                     writer.write((65).to_bytes(1, 'big'))
                     await writer.drain()
         except:
