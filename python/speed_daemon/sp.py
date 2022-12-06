@@ -29,7 +29,9 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
         logging.info(f"recieved msg {msg_type}")
         if msg_type == 0x40:
             interval = (await read_int(reader, u32))/10
+            heart_task = asyncio.create_task(heart_beat())
             logging.info(f"interval {interval}")
+
 async def main():
     logging.basicConfig(level=logging.DEBUG)
     server = await asyncio.start_server(handle_client, PROXY, PROXY_PORT)
