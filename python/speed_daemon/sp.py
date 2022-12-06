@@ -17,12 +17,11 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
     heart_task = None
     async def heart_beat():
         logging.info(f"inside a heart_beat task with interval {interval}")
-        start = time.time()
         while True:
-            if interval != 0 and time.time() - start >= interval:
+            if interval != 0:
+                await asyncio.sleep(interval)
                 writer.write((0x41).to_bytes(1, 'big'))
                 await writer.drain()
-                start = time.time()
                 logging.info(f"sent heart beat at interval {interval}")
     while True:
         msg_type = await read_int(reader, u8)
