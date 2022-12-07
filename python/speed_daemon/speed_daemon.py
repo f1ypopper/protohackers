@@ -21,9 +21,10 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
 
     heart_beat_task = None
     heart_beat_interval = 0
-
+    closed = False
     async def disconnect():
         logging.info("DISCONNECT")
+        closed = True
 
     async def disconnect_heart_beat(fut):
         logging.info("HEART BEAT DONE")
@@ -60,7 +61,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 writer.write(Heartbeat.to_bytes(1, 'big')) 
                 await writer.drain()
 
-    while not reader.at_eof():
+    while not closed:
         msg_type = await read_int(u8)
         if msg_type == IAmCamera:
             logging.info(f"camera client connected {writer.get_extra_info('peername')}")
@@ -72,6 +73,8 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
             interval = (await read_int(u32))/10
             logging.info(f"heartbeat interval set {interval} seconds")
             heart_beat_task = asyncio.create_task(heart_beat())
+        else:
+            await disconnect()
 async def main():
     server = await asyncio.start_server(handle_client, PROXY, PORT)
     logging.info(f"server running on {PROXY}:{PORT}")
