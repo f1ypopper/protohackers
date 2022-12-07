@@ -25,6 +25,10 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
     async def disconnect():
         pass
 
+    async def disconnect_heart_beat(fut):
+        logging.info("HEART BEAT DONE")
+        await disconnect()
+
     async def read_int(size):
         integer = await reader.readexactly(size)
         return int.from_bytes(integer, 'big')
@@ -59,6 +63,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
             interval = (await read_int(u32))/10
             logging.info(f"heartbeat interval set {interval} seconds")
             heart_beat_task = asyncio.create_task(heart_beat())
+            heart_beat_task.add_done_callback(disconnect_heart_beat)
 
 async def main():
     server = await asyncio.start_server(handle_client, PROXY, PORT)
