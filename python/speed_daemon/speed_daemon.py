@@ -1,6 +1,6 @@
 import asyncio
 import logging
-
+import struct
 PROXY = "0.0.0.0"
 PORT = 5000
 
@@ -23,6 +23,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
     heart_beat_interval = 0
     closed = False
     async def disconnect():
+        writer.close()
         logging.info(f"disconnected {writer.get_extra_info('peername')}")
         closed = True
 
@@ -43,9 +44,10 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
         except asyncio.IncompleteReadError as e:
             if len(e.partial) < 1:
                 return ''
-    async def handle_camera_client():
-        pass
 
+    async def handle_camera_client():
+        road, mile, limit = struct.unpack('>HHH', await reader.readexactly(u16*3))
+        print((road, mile, limit))
     async def handle_dispatcher_client():
         pass
         
