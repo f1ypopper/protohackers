@@ -23,20 +23,29 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
     heart_beat_interval = 0
 
     async def disconnect():
-        pass
+        logging.info("DISCONNECT")
 
     async def disconnect_heart_beat(fut):
         logging.info("HEART BEAT DONE")
         await disconnect()
 
     async def read_int(size):
-        integer = await reader.readexactly(size)
+        integer = b''
+        try:
+            integer = await reader.readexactly(size)
+        except asyncio.IncompleteReadError as e:
+            if len(e.partial) < 1:
+                await disconnect()
         return int.from_bytes(integer, 'big')
-
+       
     async def read_str():
-        length = await read_int(u8)
-        string = await reader.readexactly(length)
-        return string.decode()
+        try:
+            length = await read_int(u8)
+            string = await reader.readexactly(length)
+            return string.decode()
+        except asyncio.IncompleteReadError as e:
+            if len(e.partial) < 1:
+                await disconnect()
 
     async def handle_camera_client():
         pass
@@ -63,8 +72,6 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
             interval = (await read_int(u32))/10
             logging.info(f"heartbeat interval set {interval} seconds")
             heart_beat_task = asyncio.create_task(heart_beat())
-            heart_beat_task.add_done_callback(disconnect_heart_beat)
-
 async def main():
     server = await asyncio.start_server(handle_client, PROXY, PORT)
     logging.info(f"server running on {PROXY}:{PORT}")
