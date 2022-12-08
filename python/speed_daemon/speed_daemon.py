@@ -55,7 +55,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
             if msg_type == Plate:
                 plate = await read_str()
                 timestamp = await read_int(u32)
-                if not dispatchers[road]:
+                if not road in dispatchers:
                     dispatchers[road] = asyncio.Queue()
                 dispatchers[road].put({'plate':plate, 'timestamp':timestamp, 'mile':mile, 'limit': limit})
                 logging.info(f"road={road} plate={plate} timestamp={timestamp} mile={mile} limit={limit}")
