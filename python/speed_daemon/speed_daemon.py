@@ -57,7 +57,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 timestamp = await read_int(u32)
                 if not road in dispatchers:
                     dispatchers[road] = asyncio.Queue()
-                dispatchers[road].put({'plate':plate, 'timestamp':timestamp, 'mile':mile, 'limit': limit})
+                await dispatchers[road].put({'plate':plate, 'timestamp':timestamp, 'mile':mile, 'limit': limit})
                 logging.info(f"road={road} plate={plate} timestamp={timestamp} mile={mile} limit={limit}")
 
     async def handle_dispatcher_client():
@@ -65,6 +65,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
         roads = []
         for _ in range(0, numroads):
             roads.append(await read_int(u16))
+        logging.info(f"ticket dispatcher connected with roads: {roads}")
         while not closed:
             for road in roads:
                 if road not in dispatchers:
