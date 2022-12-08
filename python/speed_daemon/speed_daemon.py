@@ -16,6 +16,8 @@ Heartbeat = 0x41
 IAmCamera = 0x80
 IAmDispatcher = 0x81
 
+dispatchers = dict()
+cars = dict()
 async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     logging.info(f"accepted new connection from {writer.get_extra_info('peername')}")
 
@@ -47,10 +49,33 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
 
     async def handle_camera_client():
         road, mile, limit = struct.unpack('>HHH', await reader.readexactly(u16*3))
-        print((road, mile, limit))
+        logging.info(f"camera details: road={road} mile={mile} limit={limit}")
+        while not closed:
+            msg_type = await read_int(u8)
+            if msg_type == Plate:
+                plate = await read_str()
+                timestamp = await read_int(u32)
+                if not dispatchers[road]:
+                    dispatchers[road] = asyncio.Queue()
+                dispatchers[road].put({'plate':plate, 'timestamp':timestamp, 'mile':mile, 'limit': limit})
+                logging.info(f"road={road} plate={plate} timestamp={timestamp} mile={mile} limit={limit}")
+
     async def handle_dispatcher_client():
-        pass
-        
+        numroads = await read_int(u8)
+        roads = []
+        for _ in range(0, numroads):
+            roads.append(await read_int(u16))
+        while not closed:
+            for road in roads:
+                if road not in dispatchers:
+                    dispatchers[road] = asyncio.Queue()
+                else:
+                    queue = dispatchers[road]
+                    if not queue.empty():
+                        car = await queue.get()
+                        if car['plate'] in cars:
+                            print(f"Found the car {car['plate']} at two locations!")
+
     async def heart_beat():
         if interval != 0:
             while not writer.is_closing():
