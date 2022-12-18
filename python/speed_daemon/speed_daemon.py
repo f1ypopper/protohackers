@@ -58,7 +58,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 if not road in dispatchers:
                     dispatchers[road] = asyncio.Queue()
                 await dispatchers[road].put({'plate':plate, 'timestamp':timestamp, 'mile':mile, 'limit': limit})
-                logging.info(f"road={road} plate={plate} timestamp={timestamp} mile={mile} limit={limit}")
+                logging.info(f"car at road={road} plate={plate} timestamp={timestamp} mile={mile} limit={limit}")
 
     async def handle_dispatcher_client():
         numroads = await read_int(u8)
@@ -78,6 +78,15 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                         prev_car = cars[car['plate']]
                         mile1 = prev_car['mile']
                         timestamp1 = prev_car['timestamp']
+                        mile2 = car['mile']
+                        timestamp2 = car['timestamp']
+                        time =  max(timestamp1, timestamp2) - min(timestamp1, timestamp2)
+                        distance = max(mile1, mile2) - min(mile1, mile2)
+                        speed = distance/time
+                        if speed > car['limit']:
+                            ticket = struct.pack(f">c{len(car['plate'])}shhIhIh", len(car['plate']), car['plate'].encode(), road, mile1, timestamp1, mile2, timestamp2, speed*100)
+                            writer.write(ticket)
+                            await writer.drain()
                     else:
                         cars[car['plate']] = car
 
