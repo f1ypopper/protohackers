@@ -70,12 +70,16 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
             for road in roads:
                 if road not in dispatchers:
                     dispatchers[road] = asyncio.Queue()
-                else:
-                    queue = dispatchers[road]
-                    if not queue.empty():
-                        car = await queue.get()
-                        if car['plate'] in cars:
-                            print(f"Found the car {car['plate']} at two locations!")
+                queue = dispatchers[road]
+                if not queue.empty():
+                    car = await queue.get()
+                    if car['plate'] in cars:
+                        print(f"Found the car {car['plate']} at two locations!")
+                        prev_car = cars[car['plate']]
+                        mile1 = prev_car['mile']
+                        timestamp1 = prev_car['timestamp']
+                    else:
+                        cars[car['plate']] = car
 
     async def heart_beat():
         if interval != 0:
